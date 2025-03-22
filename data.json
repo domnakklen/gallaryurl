@@ -1,1 +1,14 @@
-{"title01,https://www.google.com/url?sa=i&url=https%3A%2F%2Fpngtree.com%2Ffree-png&psig=AOvVaw3l6Q5WR-ra8qQnzunk42eh&ust=1742765669522000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJDMjZjSnowDFQAAAAAdAAAAABAE,https://github.com/domnakklen/StudioDll/releases/download/v1.0.0/FRE.json"; "title02,link thumnail 2,link video 2"....}
+{
+  "media": [
+    {
+      "title": "title01",
+      "thumbnail": "https://www.example.com/image1.png",
+      "video": "https://github.com/domnakklen/StudioDll/releases/download/v1.0.0/FRE.json"
+    },
+    {
+      "title": "title02",
+      "thumbnail": "https://www.example.com/image2.png",
+      "video": "https://example.com/video2.mp4"
+    }
+  ]
+}
