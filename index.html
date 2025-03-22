@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Gallery with Custom Thumbnails & Captions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+
+        .search-container {
+            position: sticky;
+            top: 0;
+            background: #f0f0f0;
+            padding: 20px 0;
+            z-index: 100;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        #searchInput:focus {
+            border-color: #999;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-count {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .item {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .item:hover {
+            transform: translateY(-3px);
+        }
+
+        .item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .item div {
+            padding: 10px;
+            font-size: 14px;
+            color: #333;
+            word-break: break-word;
+            text-align: center;
+        }
+
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            text-align: center;
+        }
+
+        .lightbox-img,
+        .lightbox-video {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            background: black;
+        }
+
+        .caption {
+            color: white;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 25px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+        }
+
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            padding: 0 20px;
+            user-select: none;
+        }
+
+        .prev-btn {
+            left: 20px;
+        }
+
+        .next-btn {
+            right: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search media...">
+        <div class="result-count" id="resultCount"></div>
+    </div>
+
+    <div class="grid" id="container"></div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <span class="close-btn" id="closeBtn">&times;</span>
+        <span class="nav-btn prev-btn" id="prevBtn">❮</span>
+        <span class="nav-btn next-btn" id="nextBtn">❯</span>
+        <div class="lightbox-content" id="lightboxContent"></div>
+        <p class="caption" id="lightboxCaption"></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('container');
+            const searchInput = document.getElementById('searchInput');
+            const resultCount = document.getElementById('resultCount');
+            const lightbox = document.getElementById('lightbox');
+            const lightboxContent = document.getElementById('lightboxContent');
+            const lightboxCaption = document.getElementById('lightboxCaption');
+            const closeBtn = document.getElementById('closeBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            let currentIndex = 0;
+            let filteredMedia = [];
+
+            async function loadMedia() {
+                try {
+                    const response = await fetch('https://domnakklen.github.io/gallaryurl/data.json'); // Fetch JSON file
+                    const data = await response.json();
+                    filteredMedia = data; // Assign fetched data
+                    generateGalleryItems(filteredMedia);
+                    updateResultCount(filteredMedia.length);
+                } catch (error) {
+                    console.error("Error loading media:", error);
+                }
+            }
+
+            function generateGalleryItems(media) {
+                container.innerHTML = '';
+                media.forEach((item, index) => {
+                    const element = document.createElement('div');
+                    element.className = 'item';
+                    element.dataset.index = index;
+
+                    const mediaElement = `<img src="${item.thumbnail}" loading="lazy">`;
+
+                    element.innerHTML = `
+                        ${mediaElement}
+                        <div>${item.caption}</div>
+                    `;
+
+                    element.addEventListener('click', () => showLightbox(index));
+                    container.appendChild(element);
+                });
+            }
+
+            function filterMedia(searchTerm) {
+                const term = searchTerm.toLowerCase().trim();
+                return filteredMedia.filter(item => item.caption.toLowerCase().includes(term));
+            }
+
+            function updateResultCount(count) {
+                resultCount.textContent = `${count} items found`;
+            }
+
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value;
+                const results = filterMedia(term);
+                generateGalleryItems(results);
+                updateResultCount(results.length);
+            });
+
+            function showLightbox(index) {
+                currentIndex = index;
+                const media = filteredMedia[currentIndex];
+                lightboxContent.innerHTML = '';
+
+                let content;
+                if (media.type === 'video') {
+                    content = `<video controls autoplay class="lightbox-video">
+                                  <source src="${media.path}" type="video/mp4">
+                               </video>`;
+                } else {
+                    content = `<img src="${media.path}" class="lightbox-img">`;
+                }
+
+                lightboxContent.innerHTML = content;
+                lightboxCaption.textContent = media.caption;
+                lightbox.classList.add('active');
+            }
+
+            function closeLightbox() {
+                lightbox.classList.remove('active');
+            }
+
+            function navigate(direction) {
+                currentIndex = (currentIndex + direction + filteredMedia.length) % filteredMedia.length;
+                showLightbox(currentIndex);
+            }
+
+            closeBtn.addEventListener('click', closeLightbox);
+            prevBtn.addEventListener('click', () => navigate(-1));
+            nextBtn.addEventListener('click', () => navigate(1));
+
+            document.addEventListener('keydown', (e) => {
+                if (lightbox.classList.contains('active')) {
+                    if (e.key === 'Escape') closeLightbox();
+                    if (e.key === 'ArrowLeft') navigate(-1);
+                    if (e.key === 'ArrowRight') navigate(1);
+                }
+            });
+
+            loadMedia(); // Load media on page load
+        });
+    </script>
+</body>
+
+</html>
